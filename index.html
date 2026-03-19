@@ -239,6 +239,17 @@
   .credits-body { font-size: 0.9rem; font-style: italic; color: var(--text-dim); line-height: 2.5; opacity: 0; transform: translateY(14px); transition: opacity 2s 0.9s, transform 2s 0.9s; }
   #credits.revealed .credits-body { opacity: 0.55; transform: translateY(0); }
 
+  /* ── Footer ── */
+  #site-footer { text-align: center; padding: 1.5rem 2rem 3.5rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; opacity: 0; transition: opacity 3s 0.5s; pointer-events: none; }
+  #credits.revealed + #site-footer { opacity: 1; pointer-events: auto; }
+  .footer-divider { color: var(--gold-dim); font-size: 0.65rem; letter-spacing: 0.4em; opacity: 0.5; }
+  .footer-name { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); text-decoration: none; opacity: 0.75; transition: opacity 0.3s; }
+  .footer-name:hover { opacity: 1; }
+  .footer-links { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; }
+  .footer-links a { font-family: 'Cinzel', serif; font-size: 0.52rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); text-decoration: none; opacity: 0.5; transition: opacity 0.3s, color 0.3s; }
+  .footer-links a:hover { opacity: 1; color: var(--gold); }
+  .footer-copy { font-size: 0.75rem; font-style: italic; color: var(--text-dim); opacity: 0.3; }
+
   /* ── Mobile: restore cursor on touch devices ── */
   @media (hover: none) { body { cursor: auto; } .cursor, .cursor-ring { display: none; } }
 
@@ -492,6 +503,18 @@
     <em>All worlds, motifs, and journeys fictional.</em>
   </p>
 </section>
+
+<footer id="site-footer">
+  <span class="footer-divider">✦</span>
+  <a class="footer-name" href="https://jacklarkincomposer.co.uk" target="_blank" rel="noopener">Jack Larkin</a>
+  <nav class="footer-links" aria-label="Social links">
+    <a href="https://www.youtube.com/@Jacklarkincomposer" target="_blank" rel="noopener">YouTube</a>
+    <a href="https://soundcloud.com/jacklarkincomposer" target="_blank" rel="noopener">SoundCloud</a>
+    <a href="https://www.instagram.com/jacklarkincomposer/" target="_blank" rel="noopener">Instagram</a>
+    <a href="mailto:jacklarkincomposer@gmail.com">Email</a>
+  </nav>
+  <p class="footer-copy">© Jack Larkin 2025</p>
+</footer>
 
 <script>
   // ══════════════════════════════
