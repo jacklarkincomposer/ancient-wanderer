@@ -588,7 +588,7 @@
   // Uses the Web Audio clock exclusively — immune to JS timer jitter.
   const SCHED_AHEAD = 1.5; // seconds to schedule ahead (>1s to survive background tab throttling)
   const SCHED_INTERVAL = 200; // ms between scheduler ticks
-  const CROSSFADE = 0.1; // seconds to crossfade at loop boundaries
+  const CROSSFADE = 0.3; // seconds to crossfade at loop boundaries
   let schedNext = 0; // next loop start time on actx clock
   let schedTimer = null;
   let loopEpoch = 0; // actx time when the first loop started
@@ -606,15 +606,10 @@
       if (!buf[s] || !act.has(s)) return;
       const n = actx.createBufferSource();
       n.buffer = buf[s];
-      // Per-source fade-in envelope — natural reverb tail handles the loop-out end
-      const env = actx.createGain();
-      env.gain.setValueAtTime(0, when);
-      env.gain.linearRampToValueAtTime(1, when + CROSSFADE);
-      n.connect(env);
-      env.connect(gain[s]);
+      n.connect(gain[s]);
       n.start(when);
       activeSrc.push(n);
-      n.onended = () => { env.disconnect(); const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
+      n.onended = () => { const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
     });
   }
 
@@ -649,16 +644,11 @@
       if (remaining < 0.05) return; // negligible gap — next scheduled source covers it
       const n = actx.createBufferSource();
       n.buffer = buf[s];
-      // Fade in from now — natural reverb tail handles the hand-off at the loop boundary
-      const env = actx.createGain();
-      env.gain.setValueAtTime(0, now);
-      env.gain.linearRampToValueAtTime(1, now + CROSSFADE);
-      n.connect(env);
-      env.connect(g);
+      n.connect(g);
       n.start(0, offset);
       n.stop(now + remaining);
       activeSrc.push(n);
-      n.onended = () => { env.disconnect(); const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
+      n.onended = () => { const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
     }
     const d = document.getElementById('stem-'+s);
     if (d) d.classList.add('active');
