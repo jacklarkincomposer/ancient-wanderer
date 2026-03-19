@@ -588,7 +588,7 @@
   // Uses the Web Audio clock exclusively — immune to JS timer jitter.
   const SCHED_AHEAD = 1.5; // seconds to schedule ahead (>1s to survive background tab throttling)
   const SCHED_INTERVAL = 200; // ms between scheduler ticks
-  const CROSSFADE = 0.3; // seconds to crossfade at loop boundaries
+  const CROSSFADE = 0.1; // seconds to crossfade at loop boundaries
   let schedNext = 0; // next loop start time on actx clock
   let schedTimer = null;
   let loopEpoch = 0; // actx time when the first loop started
@@ -739,7 +739,7 @@
   // VISUALISER
   // ══════════════════════════════
   const ve = document.getElementById('visualiser');
-  const VIS_BARS = 120;
+  const VIS_BARS = 220;
   const vb = [];
   for (let i = 0; i < VIS_BARS; i++) {
     const b = document.createElement('div');
