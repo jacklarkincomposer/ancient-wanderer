@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ancient Wanderer — Jack Larkin</title>
+<link rel="icon" href="../assets/images/logo.png" type="image/png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  :root {
+    --gold: #c9a84c;
+    --gold-dim: #8a6b2e;
+    --ash: #0d0c0a;
+    --stone: #1a1710;
+    --text: #d4c9a8;
+    --text-dim: #7a7060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body { background: var(--ash); color: var(--text); font-family: 'Cormorant Garamond', serif; overflow-x: hidden; cursor: none; }
+
+  /* ── Cursor ── */
+  .cursor { position: fixed; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); mix-blend-mode: screen; }
+  .cursor-ring { position: fixed; width: 34px; height: 34px; border: 1px solid rgba(201,168,76,0.4); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: width 0.25s, height 0.25s, border-color 0.25s; }
+
+  /* ── Progress bar ── */
+  #progress-bar { position: fixed; left: 0; top: 0; width: 0%; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); z-index: 600; transition: width 0.1s linear; }
+
+  /* ── Notification ── */
+  #notification { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%) translateY(-16px); background: rgba(13,12,10,0.95); border: 1px solid var(--gold-dim); padding: 0.65rem 1.5rem; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); z-index: 700; opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none; white-space: nowrap; backdrop-filter: blur(8px); }
+  #notification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ══════════════════════════════
+     CONTROLS
+  ══════════════════════════════ */
+  #controls {
+    position: fixed; bottom: 2rem; right: 2rem;
+    z-index: 500; display: flex; flex-direction: column;
+    align-items: flex-end; gap: 0.9rem;
+  }
+
+  .stem-indicators { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+  .stem-dot { display: flex; align-items: center; gap: 9px; opacity: 0.2; transition: opacity 0.7s; }
+  .stem-dot.active { opacity: 1; }
+  .stem-dot span { font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.15em; color: var(--text-dim); text-transform: uppercase; }
+  .stem-dot.active span { color: var(--gold); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-dim); transition: background 0.7s, box-shadow 0.7s; flex-shrink: 0; }
+  .stem-dot.active .dot { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  .ctrl-row { display: flex; gap: 0.6rem; align-items: center; }
+
+  .ctrl-btn {
+    font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--gold);
+    border: 1px solid var(--gold-dim); background: rgba(13,12,10,0.92);
+    padding: 0.7rem 1.3rem; min-height: 44px; min-width: 44px;
+    cursor: none; transition: all 0.3s; backdrop-filter: blur(8px);
+    white-space: nowrap; display: flex; align-items: center; justify-content: center;
+  }
+  .ctrl-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+  .ctrl-btn.on { background: var(--gold); color: var(--ash); border-color: var(--gold); }
+
+  #volume-wrap { display: flex; align-items: center; gap: 0.75rem; }
+  #volume-wrap label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.2em; color: var(--text-dim); text-transform: uppercase; }
+  #vol { -webkit-appearance: none; appearance: none; width: 90px; height: 2px; background: var(--gold-dim); outline: none; cursor: none; border-radius: 1px; }
+  #vol::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); cursor: none; }
+  #vol::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: var(--gold); border: none; }
+
+  /* ── Pace lock ── */
+  #pace-lock { position: fixed; bottom: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 800; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
+  #pace-lock.show { opacity: 1; background: linear-gradient(90deg, transparent, var(--gold), transparent); box-shadow: 0 0 20px 4px rgba(201,168,76,0.35); animation: gpulse 1.5s ease-in-out 3; }
+  @keyframes gpulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  #pace-warning { position: fixed; bottom: 2.5rem; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(13,12,10,0.95); border: 1px solid var(--gold-dim); padding: 0.55rem 1.6rem; font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); z-index: 800; opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; backdrop-filter: blur(8px); }
+  #pace-warning.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Intro modal ── */
+  #intro-modal {
+    position: fixed; inset: 0; z-index: 2000;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(13,12,10,0.97); backdrop-filter: blur(12px);
+    opacity: 1; transition: opacity 1s;
+  }
+  #intro-modal.hidden { opacity: 0; pointer-events: none; }
+  .intro-box {
+    max-width: 520px; width: 90%; padding: 3rem 3.5rem;
+    border: 1px solid var(--gold-dim);
+    background: rgba(26,23,16,0.95);
+    text-align: center; position: relative;
+  }
+  .intro-box::before, .intro-box::after {
+    content: ''; position: absolute; width: 16px; height: 16px;
+    border-color: var(--gold); border-style: solid; opacity: 0.5;
+  }
+  .intro-box::before { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+  .intro-box::after  { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+  .intro-eyebrow { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 1.2rem; }
+  .intro-title { font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 4vw, 2.2rem); font-weight: 600; color: var(--text); margin-bottom: 1.5rem; line-height: 1.2; }
+  .intro-body { font-size: 1rem; font-style: italic; color: var(--text-dim); line-height: 1.85; margin-bottom: 0.75rem; }
+  .intro-hints { display: flex; flex-direction: column; gap: 0.4rem; margin: 1.4rem 0 2rem; }
+  .intro-hint { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+  .intro-hint span.icon { color: var(--gold); font-size: 0.75rem; }
+  .intro-enter {
+    font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.4em;
+    text-transform: uppercase; color: var(--gold);
+    border: 1px solid var(--gold-dim); padding: 0.9rem 2.4rem;
+    background: transparent; cursor: none; overflow: hidden;
+    position: relative; transition: color 0.4s;
+  }
+  .intro-enter::before { content:''; position:absolute; inset:0; background:var(--gold); transform:translateX(-101%); transition:transform 0.4s; z-index:-1; }
+  .intro-enter:hover::before { transform:translateX(0); }
+  .intro-enter:hover { color: var(--ash); }
+
+  /* ── Scroll arrow ── */
+  #scroll-arrow {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    z-index: 450; opacity: 0; pointer-events: none;
+    transition: opacity 0.6s, transform 0.6s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  #scroll-arrow.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #scroll-arrow.hide { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  .arrow-label { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-dim); }
+  .arrow-chevron { width: 20px; height: 20px; border-right: 1px solid var(--gold); border-bottom: 1px solid var(--gold); transform: rotate(45deg); margin-top: -4px; animation: bounce 1.8s ease-in-out infinite; opacity: 0.7; }
+  @keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(4px)} }
+
+  #visualiser { position: fixed; bottom: 0; left: 0; right: 0; height: 36px; z-index: 400; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; gap: 2px; padding-bottom: 3px; opacity: 0; transition: opacity 0.5s; }
+  #visualiser.active { opacity: 0.3; }
+  .vb { width: 2px; background: var(--gold); border-radius: 1px 1px 0 0; }
+
+  /* ══════════════════════════════
+     HERO
+  ══════════════════════════════ */
+  #hero {
+    height: 100vh; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; opacity: 0; animation: hfade 2s 0.3s forwards;
+  }
+  @keyframes hfade { to { opacity:1; } }
+  .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 55%, rgba(201,168,76,0.04) 0%, transparent 70%); }
+  .ruins-svg { position: absolute; bottom: 0; left: 0; width: 100%; opacity: 0.1; }
+
+  .hero-eyebrow { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 1.5rem; opacity: 0; animation: fup 1.4s 0.6s forwards; position: relative; z-index: 2; }
+  .hero-title { font-family: 'Cinzel', serif; font-size: clamp(3.5rem, 11vw, 9rem); font-weight: 900; line-height: 0.88; color: var(--text); opacity: 0; animation: fup 1.4s 0.9s forwards; position: relative; z-index: 2; }
+  .hero-title em { display: block; font-style: italic; font-weight: 400; color: var(--gold); font-size: 0.52em; letter-spacing: 0.07em; margin-top: 0.25em; }
+  .hero-sub { margin-top: 1.5rem; font-size: 1.1rem; font-style: italic; color: var(--text-dim); letter-spacing: 0.04em; opacity: 0; animation: fup 1.4s 1.2s forwards; position: relative; z-index: 2; max-width: 400px; line-height: 1.7; }
+  .hero-rule { display: flex; align-items: center; gap: 1rem; margin-top: 2.5rem; opacity: 0; animation: fup 1.4s 1.5s forwards; position: relative; z-index: 2; }
+  .rl { width: 50px; height: 1px; background: linear-gradient(to right, transparent, var(--gold-dim)); }
+  .rl.r { background: linear-gradient(to left, transparent, var(--gold-dim)); }
+  .hero-rule span { font-family: 'Cinzel', serif; color: var(--gold-dim); font-size: 0.65rem; letter-spacing: 0.2em; }
+
+  .begin-btn {
+    margin-top: 2.5rem; font-family: 'Cinzel', serif; font-size: 0.7rem;
+    letter-spacing: 0.4em; text-transform: uppercase; color: var(--gold);
+    border: 1px solid var(--gold-dim); padding: 1.1rem 3rem;
+    background: transparent; cursor: none;
+    opacity: 0; animation: fup 1.4s 1.8s forwards;
+    position: relative; z-index: 2; overflow: hidden; transition: color 0.4s;
+  }
+  .begin-btn::before { content:''; position:absolute; inset:0; background:var(--gold); transform:translateX(-101%); transition:transform 0.4s; z-index:-1; }
+  .begin-btn:hover::before { transform:translateX(0); }
+  .begin-btn:hover { color: var(--ash); }
+
+  @keyframes fup { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ══════════════════════════════
+     SCENE
+  ══════════════════════════════ */
+  .scene { padding: 0 0 6vh; background: var(--ash); }
+
+  .scene-frame {
+    width: 100%; aspect-ratio: 16/9; max-height: 72vh;
+    position: relative; overflow: hidden; background: var(--stone);
+  }
+  .scene-frame img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transform: scale(1.04); transition: transform 10s ease;
+  }
+  .scene.in-view .scene-frame img { transform: scale(1); }
+  .scene-frame::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 35%; background: linear-gradient(to bottom, transparent, var(--ash)); pointer-events: none; }
+  .scene-frame::before { content: ''; position: absolute; inset: 12px; z-index: 2; pointer-events: none; border: 1px solid rgba(201,168,76,0.2); }
+
+  .scene-body { max-width: 1100px; margin: 0 auto; padding: 3vh 8vw 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6vw; align-items: start; }
+
+  .scene-mood { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; opacity: 0; transform: translateY(16px); transition: opacity 0.8s, transform 0.8s; }
+  .scene.in-view .scene-mood { opacity: 1; transform: translateY(0); }
+
+  .scene-title { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 3vw, 2.6rem); font-weight: 600; line-height: 1.15; color: var(--text); margin-bottom: 1rem; opacity: 0; transform: translateY(16px); transition: opacity 0.8s 0.1s, transform 0.8s 0.1s; }
+  .scene.in-view .scene-title { opacity: 1; transform: translateY(0); }
+
+  .traveller-line { font-size: 0.95rem; font-style: italic; color: var(--gold); opacity: 0; transform: translateY(12px); transition: opacity 0.8s 0.2s, transform 0.8s 0.2s; margin-bottom: 0.9rem; line-height: 1.6; border-left: 1px solid var(--gold-dim); padding-left: 1rem; }
+  .scene.in-view .traveller-line { opacity: 0.75; transform: translateY(0); }
+
+  .scene-text { font-size: 1.05rem; line-height: 1.85; color: var(--text-dim); font-style: italic; opacity: 0; transform: translateY(16px); transition: opacity 0.8s 0.3s, transform 0.8s 0.3s; }
+  .scene.in-view .scene-text { opacity: 1; transform: translateY(0); }
+
+  .stem-chart { display: flex; flex-direction: column; gap: 0.6rem; opacity: 0; transform: translateY(16px); transition: opacity 0.8s 0.35s, transform 0.8s 0.35s; padding-top: 0.5rem; }
+  .scene.in-view .stem-chart { opacity: 1; transform: translateY(0); }
+  .stem-chart-label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.4rem; }
+
+  .sc-row { display: flex; align-items: center; gap: 0.75rem; }
+  .sc-lbl { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); width: 95px; flex-shrink: 0; }
+  .sc-track { flex: 1; height: 1px; background: rgba(255,255,255,0.07); position: relative; }
+  .sc-fill { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(to right, var(--gold-dim), var(--gold)); width: 0; transition: width 1.8s ease; }
+  .scene.in-view .sc-fill { width: var(--w); }
+  .sc-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--gold-dim); flex-shrink: 0; transition: background 0.6s, box-shadow 0.6s; }
+  .scene.in-view .sc-pip { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+
+  /* ── Impact ── */
+  .impact { height: 45vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .impact-rule { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 0; height: 1px; background: linear-gradient(to right, transparent, var(--gold-dim), transparent); transition: width 2s ease; }
+  .impact.in-view .impact-rule { width: 65vw; }
+  .impact-text { font-family: 'Cinzel', serif; font-size: clamp(1.3rem, 3.5vw, 3rem); font-weight: 600; text-align: center; color: var(--text); max-width: 680px; padding: 0 2rem; opacity: 0; transform: scale(0.96); transition: opacity 1.4s, transform 1.4s; line-height: 1.35; position: relative; z-index: 1; }
+  .impact.in-view .impact-text { opacity: 1; transform: scale(1); }
+  .impact-text em { color: var(--gold); font-style: italic; }
+
+  /* ── Outro ── */
+  #outro { height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; gap: 2rem; position: relative; overflow: hidden; }
+  #outro::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 70% 50% at 50% 50%, rgba(201,168,76,0.06) 0%, transparent 70%); animation: breathe 4s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  .outro-title { font-family: 'Cinzel', serif; font-size: clamp(2rem, 6vw, 5.5rem); font-weight: 900; line-height: 1.05; letter-spacing: 0.08em; color: var(--text); text-transform: uppercase; opacity: 0; transform: translateY(28px); transition: opacity 2s, transform 2s; position: relative; z-index: 2; }
+  .outro-title.revealed { opacity: 1; transform: translateY(0); }
+  .outro-sub { font-family: 'Cinzel', serif; font-size: clamp(0.65rem, 1.6vw, 1rem); letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; opacity: 0; transform: translateY(16px); transition: opacity 2s 0.5s, transform 2s 0.5s; position: relative; z-index: 2; }
+  .outro-sub.revealed { opacity: 0.85; transform: translateY(0); }
+
+  /* Outro stem chart — uses .outro-in-view instead of .scene.in-view */
+  #outro.outro-in-view .sc-fill { width: var(--w); }
+  #outro.outro-in-view .sc-pip { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+
+  /* ── Credits ── */
+  #credits { min-height: 80vh; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; gap: 1.5rem; padding: 4rem 2rem; opacity: 0; transition: opacity 3s; pointer-events: none; }
+  #credits.revealed { opacity: 1; pointer-events: auto; }
+  .credits-hl { font-family: 'Cinzel', serif; font-size: clamp(0.7rem, 1.8vw, 1rem); letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; opacity: 0; transform: translateY(14px); transition: opacity 2s 0.4s, transform 2s 0.4s; }
+  #credits.revealed .credits-hl { opacity: 1; transform: translateY(0); }
+  .credits-body { font-size: 0.9rem; font-style: italic; color: var(--text-dim); line-height: 2.5; opacity: 0; transform: translateY(14px); transition: opacity 2s 0.9s, transform 2s 0.9s; }
+  #credits.revealed .credits-body { opacity: 0.55; transform: translateY(0); }
+
+  /* ── Mobile: restore cursor on touch devices ── */
+  @media (hover: none) { body { cursor: auto; } .cursor, .cursor-ring { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- Intro modal — single entry point, triggers audio -->
+<div id="intro-modal">
+  <div class="intro-box">
+    <p class="intro-eyebrow">An Audiovisual Experience</p>
+    <h2 class="intro-title">The Ancient Wanderer</h2>
+    <p class="intro-body">A journey through a fictional ancient world, told entirely through music. As you scroll, new layers of the composition enter — strings, percussion, choir — building and dissolving with the landscape.</p>
+    <div class="intro-hints">
+      <div class="intro-hint"><span class="icon">↕</span> Scroll to move through the world</div>
+      <div class="intro-hint"><span class="icon">⏳</span> Each section asks you to pause and listen</div>
+      <div class="intro-hint"><span class="icon">♪</span> Use headphones for the full experience</div>
+    </div>
+    <button class="intro-enter" id="intro-btn" onclick="enterWorld()">Enter the World</button>
+  </div>
+</div>
+
+<!-- Scroll arrow -->
+<div id="scroll-arrow">
+  <span class="arrow-label">Continue</span>
+  <div class="arrow-chevron"></div>
+</div>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+<div id="progress-bar"></div>
+<div id="notification"></div>
+<div id="pace-lock"></div>
+<div id="pace-warning">Scrolling too fast</div>
+<div id="visualiser"></div>
+
+<!-- Controls -->
+<div id="controls">
+  <div class="stem-indicators">
+    <div class="stem-dot" id="stem-solo"><span>Solo String</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-harp"><span>Harp</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-lightperc"><span>Light Perc</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-cello"><span>Cello</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-lightorc"><span>Light Orc</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-doublebass"><span>Double Bass</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-choir"><span>Choir</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-medperc"><span>Med Perc</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-fullstring"><span>Full Strings</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-fullorc"><span>Full Orc</span><div class="dot"></div></div>
+    <div class="stem-dot" id="stem-heavyperc"><span>Heavy Perc</span><div class="dot"></div></div>
+  </div>
+  <div class="ctrl-row">
+    <button class="ctrl-btn" id="as-btn" onclick="toggleAS()">Auto Scroll</button>
+    <button class="ctrl-btn" id="mute-btn" onclick="toggleMute()">♪</button>
+  </div>
+  <div id="volume-wrap">
+    <label>Vol</label>
+    <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" oninput="setVol(this.value)">
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <svg class="ruins-svg" viewBox="0 0 1440 200" preserveAspectRatio="none">
+    <path d="M0,200 L0,160 L40,160 L40,120 L60,120 L60,80 L80,80 L80,60 L100,60 L100,80 L120,80 L120,120 L140,120 L140,160 L180,160 L180,140 L200,140 L200,100 L220,100 L220,60 L240,60 L240,40 L260,40 L260,60 L280,60 L280,100 L300,100 L300,140 L340,140 L340,160 L400,160 L400,130 L420,130 L420,90 L440,70 L460,90 L460,130 L480,130 L480,160 L560,160 L560,140 L580,140 L580,100 L600,80 L620,80 L620,50 L640,50 L640,30 L660,30 L660,50 L680,50 L680,80 L700,80 L700,100 L720,100 L720,140 L740,140 L740,160 L800,160 L800,120 L820,120 L820,80 L840,80 L840,60 L860,40 L880,60 L880,80 L900,80 L900,120 L920,120 L920,160 L980,160 L980,140 L1000,140 L1000,100 L1020,70 L1040,100 L1040,140 L1060,140 L1060,160 L1120,160 L1120,130 L1140,130 L1140,90 L1160,90 L1160,60 L1180,60 L1180,40 L1200,40 L1200,60 L1220,60 L1220,90 L1240,90 L1240,130 L1260,130 L1260,160 L1320,160 L1320,140 L1340,140 L1340,120 L1360,120 L1360,160 L1400,160 L1440,160 L1440,200 Z" fill="rgba(201,168,76,0.08)"/>
+    <circle cx="300" cy="40" r="1" fill="rgba(201,168,76,0.6)"/>
+    <circle cx="750" cy="20" r="1.5" fill="rgba(201,168,76,0.8)"/>
+    <circle cx="1100" cy="30" r="1" fill="rgba(201,168,76,0.5)"/>
+    <circle cx="500" cy="15" r="1" fill="rgba(201,168,76,0.4)"/>
+    <circle cx="900" cy="10" r="2" fill="rgba(201,168,76,0.6)"/>
+  </svg>
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;">
+    <p class="hero-eyebrow">An Original Composition — Jack Larkin</p>
+    <h1 class="hero-title">The Ancient<em>Wanderer</em></h1>
+    <p class="hero-sub">An unnamed traveller. A world without edges.<br>A silence that remembers.</p>
+    <div class="hero-rule"><div class="rl"></div><span>✦ ✦ ✦</span><div class="rl r"></div></div>
+  </div>
+</section>
+
+<!-- SCENE 1 -->
+<div class="scene" id="scene-1">
+  <div class="scene-frame">
+    <img src="https://cdn.jacklarkincomposer.co.uk/Images%201/The%20summit.png" alt="The Summit" loading="lazy">
+  </div>
+  <div class="scene-body">
+    <div class="scene-left">
+      <p class="scene-mood">Sparse · Lost · Searching</p>
+      <h2 class="scene-title">The Summit at the Edge of Memory</h2>
+      <p class="traveller-line">"I did not choose this road — it found me at the edge of everything."</p>
+      <p class="scene-text">The music begins with almost nothing — a solo string against silence, a harp answering. The world is vast. The traveller is small. This is where we start: stripped back, uncertain, looking out at a landscape that has no name.</p>
+    </div>
+    <div class="scene-right">
+      <div class="stem-chart">
+        <p class="stem-chart-label">Layers Active</p>
+        <div class="sc-row"><span class="sc-lbl">Solo String</span><div class="sc-track"><div class="sc-fill" style="--w:70%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Harp</span><div class="sc-track"><div class="sc-fill" style="--w:50%"></div></div><div class="sc-pip"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPACT 1 -->
+<div class="impact" id="impact-1">
+  <div class="impact-rule"></div>
+  <p class="impact-text">A world <em>remembered</em> before it was ever known.</p>
+</div>
+
+<!-- SCENE 2 -->
+<div class="scene" id="scene-2">
+  <div class="scene-frame">
+    <img src="https://cdn.jacklarkincomposer.co.uk/Images%201/the%20valley.png" alt="The Valley" loading="lazy">
+  </div>
+  <div class="scene-body">
+    <div class="scene-left">
+      <p class="scene-mood">Ancient · Warm · Melancholic</p>
+      <h2 class="scene-title">The Valley of Forgotten Names</h2>
+      <p class="traveller-line">"The stones here were shaped by hands that are gone. I can still feel the warmth of them."</p>
+      <p class="scene-text">Rhythmic percussion enters beneath the strings — steady, ancient. The melody shifts from searching to recognition. The harp continues. Someone was here before. The music carries the shape of lives that no longer exist to claim it.</p>
+    </div>
+    <div class="scene-right">
+      <div class="stem-chart">
+        <p class="stem-chart-label">Layers Active</p>
+        <div class="sc-row"><span class="sc-lbl">Solo String</span><div class="sc-track"><div class="sc-fill" style="--w:70%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Harp</span><div class="sc-track"><div class="sc-fill" style="--w:50%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Light Perc</span><div class="sc-track"><div class="sc-fill" style="--w:60%"></div></div><div class="sc-pip"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE 3 -->
+<div class="scene" id="scene-3">
+  <div class="scene-frame">
+    <img src="https://cdn.jacklarkincomposer.co.uk/Images%201/the%20world.png" alt="The World Revealed" loading="lazy">
+  </div>
+  <div class="scene-body">
+    <div class="scene-left">
+      <p class="scene-mood">Epic · Triumphant · Ancient</p>
+      <h2 class="scene-title">The World Revealed</h2>
+      <p class="traveller-line">"And then — all at once — the world opened. And it was more than I could hold."</p>
+      <p class="scene-text">The full orchestration arrives. Cello and low strings give the music weight and earth. A light orchestra swells around the melody. This is the heart of the composition — the moment everything that came before resolves into something larger than itself.</p>
+    </div>
+    <div class="scene-right">
+      <div class="stem-chart">
+        <p class="stem-chart-label">Layers Active</p>
+        <div class="sc-row"><span class="sc-lbl">Solo String</span><div class="sc-track"><div class="sc-fill" style="--w:70%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Harp</span><div class="sc-track"><div class="sc-fill" style="--w:50%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Light Perc</span><div class="sc-track"><div class="sc-fill" style="--w:60%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Cello</span><div class="sc-track"><div class="sc-fill" style="--w:80%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Light Orc</span><div class="sc-track"><div class="sc-fill" style="--w:75%"></div></div><div class="sc-pip"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPACT 2 -->
+<div class="impact" id="impact-2">
+  <div class="impact-rule"></div>
+  <p class="impact-text">Every silence was simply <em>the world</em> gathering its breath.</p>
+</div>
+
+<!-- SCENE 4 -->
+<div class="scene" id="scene-4">
+  <div class="scene-frame">
+    <img src="https://cdn.jacklarkincomposer.co.uk/Images%201/Where%20are%20the%20sea%20holds%20It%27s%20dead.png" alt="Where the Sea Holds Its Dead" loading="lazy">
+  </div>
+  <div class="scene-body">
+    <div class="scene-left">
+      <p class="scene-mood">Dark · Reverent · Still</p>
+      <h2 class="scene-title">Where the Sea Holds Its Dead</h2>
+      <p class="traveller-line">"To stand here is to understand that beauty and ruin are the same thing."</p>
+      <p class="scene-text">Double bass and choir enter — grounding the sacred in something earthen and inevitable. The harp and light percussion fall away. The solo string continues, quieter now. This is not sadness — it is completion. What stands here has already become something else.</p>
+    </div>
+    <div class="scene-right">
+      <div class="stem-chart">
+        <p class="stem-chart-label">Layers Active</p>
+        <div class="sc-row"><span class="sc-lbl">Solo String</span><div class="sc-track"><div class="sc-fill" style="--w:55%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Cello</span><div class="sc-track"><div class="sc-fill" style="--w:65%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Double Bass</span><div class="sc-track"><div class="sc-fill" style="--w:70%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Choir</span><div class="sc-track"><div class="sc-fill" style="--w:75%"></div></div><div class="sc-pip"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCENE 5 -->
+<div class="scene" id="scene-5">
+  <div class="scene-frame">
+    <img src="https://cdn.jacklarkincomposer.co.uk/Images%201/road%20leats%20to%20itseld.png" alt="The Road That Leads to Itself" loading="lazy">
+  </div>
+  <div class="scene-body">
+    <div class="scene-left">
+      <p class="scene-mood">Resolved · Distant · Eternal</p>
+      <h2 class="scene-title">The Road That Leads to Itself</h2>
+      <p class="traveller-line">"I recognised the summit from below. I had been here before. I always had been."</p>
+      <p class="scene-text">The full strings return — broader, knowing. Medium percussion drives the music forward into something that feels both like an ending and a beginning. The original melody surfaces one last time, transformed by everything that followed it.</p>
+    </div>
+    <div class="scene-right">
+      <div class="stem-chart">
+        <p class="stem-chart-label">Layers Active</p>
+        <div class="sc-row"><span class="sc-lbl">Full Strings</span><div class="sc-track"><div class="sc-fill" style="--w:85%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Med Perc</span><div class="sc-track"><div class="sc-fill" style="--w:70%"></div></div><div class="sc-pip"></div></div>
+        <div class="sc-row"><span class="sc-lbl">Choir</span><div class="sc-track"><div class="sc-fill" style="--w:55%"></div></div><div class="sc-pip"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OUTRO -->
+<section id="outro">
+  <h2 class="outro-title">The Ancient Wanderer<br><em style="font-style:italic;font-weight:400;font-size:0.5em;letter-spacing:0.15em;color:var(--gold);display:block;margin-top:0.3em;">Original Composition</em></h2>
+  <p class="outro-sub">Composed by Jack Larkin</p>
+  <div style="display:flex;flex-direction:column;gap:0.5rem;align-items:center;margin-top:0.5rem;opacity:0.5;" id="outro-stems">
+    <div class="sc-row" style="width:220px;"><span class="sc-lbl" style="width:80px;">Full Strings</span><div class="sc-track"><div class="sc-fill" style="--w:90%"></div></div><div class="sc-pip"></div></div>
+    <div class="sc-row" style="width:220px;"><span class="sc-lbl" style="width:80px;">Full Orc</span><div class="sc-track"><div class="sc-fill" style="--w:80%"></div></div><div class="sc-pip"></div></div>
+    <div class="sc-row" style="width:220px;"><span class="sc-lbl" style="width:80px;">Heavy Perc</span><div class="sc-track"><div class="sc-fill" style="--w:70%"></div></div><div class="sc-pip"></div></div>
+  </div>
+</section>
+
+<!-- CREDITS -->
+<section id="credits">
+  <p class="credits-hl">Thank you for listening</p>
+  <p class="credits-body">
+    Final Year Composition for Screen<br>
+    University of Huddersfield · 2025<br>
+    Logic Pro · East West Composer Cloud<br><br>
+    <em>All worlds, motifs, and journeys fictional.</em>
+  </p>
+</section>
+
+<script>
+  // ══════════════════════════════
+  // CURSOR
+  // ══════════════════════════════
+  const cur = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx+'px'; cur.style.top = my+'px'; });
+  (function tick() { rx += (mx-rx)*0.12; ry += (my-ry)*0.12; ring.style.left = rx+'px'; ring.style.top = ry+'px'; requestAnimationFrame(tick); })();
+  document.querySelectorAll('button,.begin-btn,.intro-enter').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width='48px'; ring.style.height='48px'; ring.style.borderColor='var(--gold)'; });
+    el.addEventListener('mouseleave', () => { ring.style.width='34px'; ring.style.height='34px'; ring.style.borderColor='rgba(201,168,76,0.4)'; });
+  });
+
+  // ══════════════════════════════
+  // AUDIO ENGINE
+  // ══════════════════════════════
+  const CDN = 'https://cdn.jacklarkincomposer.co.uk/Stems/';
+  const SF = {
+    solo:'Solo_Strings_Melody.wav', harp:'Harp.wav', lightperc:'Light_Percussion.wav',
+    cello:'Cello_Bass.wav', lightorc:'Light_Orchestra.wav', doublebass:'Double_Bass.wav',
+    choir:'Choir.wav', medperc:'Med_Percussion.wav', fullstring:'Full_Strings_Melody.wav',
+    fullorc:'Full_Orchestra.wav', heavyperc:'Heavy_Percussion.wav'
+  };
+  const STEMS = Object.keys(SF);
+  const LOOP = 19.2; // bars 1-16 at 150bpm 3/4
+
+  let actx = null, mg = null, impactGain = null, muted = false, ready = false;
+  const act = new Set(), buf = {}, gain = {}, activeSrc = [];
+
+  async function initAudio() {
+    if (actx) return;
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    mg = actx.createGain();
+    mg.gain.value = 0.8;
+    impactGain = actx.createGain();
+    impactGain.gain.value = 1;
+    mg.connect(impactGain);
+    impactGain.connect(actx.destination);
+
+    const btn = document.getElementById('intro-btn');
+    if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+
+    await Promise.all(STEMS.map(async s => {
+      try {
+        const r = await fetch(CDN + SF[s]);
+        buf[s] = await actx.decodeAudioData(await r.arrayBuffer());
+      } catch(e) {
+        console.warn('Stem failed:', s, e);
+        buf[s] = null;
+      }
+    }));
+
+    STEMS.forEach(s => {
+      const g = actx.createGain();
+      g.gain.value = 0;
+      g.connect(mg);
+      gain[s] = g;
+    });
+
+    ready = true;
+    if (btn) { btn.textContent = 'Enter the World'; btn.disabled = false; }
+  }
+
+  // ── Lookahead scheduler — drift-proof ──
+  // Schedules sources up to SCHED_AHEAD seconds in advance on a short interval.
+  // Uses the Web Audio clock exclusively — immune to JS timer jitter.
+  const SCHED_AHEAD = 0.5; // seconds to schedule ahead
+  const SCHED_INTERVAL = 200; // ms between scheduler ticks
+  let schedNext = 0; // next loop start time on actx clock
+  let schedTimer = null;
+
+  function schedulerTick() {
+    while (schedNext < actx.currentTime + SCHED_AHEAD) {
+      schedGeneration(schedNext);
+      schedNext += LOOP;
+    }
+    schedTimer = setTimeout(schedulerTick, SCHED_INTERVAL);
+  }
+
+  function schedGeneration(when) {
+    STEMS.forEach(s => {
+      if (!buf[s]) return;
+      const n = actx.createBufferSource();
+      n.buffer = buf[s];
+      n.connect(gain[s]);
+      n.start(when);
+      activeSrc.push(n);
+      n.onended = () => { const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
+    });
+  }
+
+  function startScheduler() {
+    schedNext = actx.currentTime + 0.1;
+    schedulerTick();
+  }
+
+  function stopScheduler() {
+    clearTimeout(schedTimer);
+    schedTimer = null;
+  }
+
+  // ── Stem activation — safe gain snapshot ──
+  function on(s) {
+    if (act.has(s)) return;
+    act.add(s);
+    const g = gain[s];
+    if (!g) return;
+    const now = actx.currentTime;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(g.gain.value, now); // snapshot current value
+    g.gain.linearRampToValueAtTime(1, now + 3);
+    const d = document.getElementById('stem-'+s);
+    if (d) d.classList.add('active');
+    note('+ ' + s.toUpperCase());
+    vis();
+  }
+
+  function off(s) {
+    if (!act.has(s)) return;
+    act.delete(s);
+    const g = gain[s];
+    if (!g) return;
+    const now = actx.currentTime;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(g.gain.value, now);
+    g.gain.linearRampToValueAtTime(0, now + 4);
+    const d = document.getElementById('stem-'+s);
+    if (d) d.classList.remove('active');
+    vis();
+  }
+
+  function setVol(v) {
+    if (!mg) return;
+    const now = actx.currentTime;
+    mg.gain.cancelScheduledValues(now);
+    mg.gain.setValueAtTime(mg.gain.value, now);
+    mg.gain.linearRampToValueAtTime(parseFloat(v), now + 0.05);
+    if (parseFloat(v) > 0 && muted) {
+      muted = false;
+      const b = document.getElementById('mute-btn');
+      b.textContent = '♪'; b.style.color = 'var(--gold)';
+    }
+  }
+
+  function toggleMute() {
+    if (!actx) return;
+    muted = !muted;
+    const b = document.getElementById('mute-btn');
+    const now = actx.currentTime;
+    mg.gain.cancelScheduledValues(now);
+    mg.gain.setValueAtTime(mg.gain.value, now);
+    if (muted) {
+      mg.gain.linearRampToValueAtTime(0, now + 0.5);
+      b.textContent = '✕'; b.style.color = 'var(--text-dim)';
+    } else {
+      mg.gain.linearRampToValueAtTime(parseFloat(document.getElementById('vol').value), now + 0.5);
+      b.textContent = '♪'; b.style.color = 'var(--gold)';
+    }
+  }
+
+  // Fade out master — guards against conflict with mute
+  let fadingOut = false;
+  function fadeOut() {
+    if (!mg || !actx || fadingOut) return;
+    fadingOut = true;
+    const now = actx.currentTime;
+    mg.gain.cancelScheduledValues(now);
+    mg.gain.setValueAtTime(mg.gain.value, now);
+    mg.gain.linearRampToValueAtTime(0, now + 8);
+    setTimeout(() => { if (ve) ve.classList.remove('active'); }, 4000);
+  }
+
+  // ══════════════════════════════
+  // VISUALISER
+  // ══════════════════════════════
+  const ve = document.getElementById('visualiser');
+  const vb = [];
+  for (let i = 0; i < 60; i++) {
+    const b = document.createElement('div');
+    b.className = 'vb'; b.style.height = '2px';
+    ve.appendChild(b); vb.push(b);
+  }
+  function vis() {
+    const n = act.size, mh = Math.min(n * 7, 34);
+    vb.forEach((b, i) => { b.style.height = Math.max(2, Math.random()*mh*Math.sin(i/60*Math.PI))+'px'; });
+    if (n > 0 && !muted) ve.classList.add('active');
+    else ve.classList.remove('active');
+  }
+
+  // ══════════════════════════════
+  // NOTIFICATIONS
+  // ══════════════════════════════
+  let nt;
+  const nf = document.getElementById('notification');
+  function note(m) { nf.textContent = m; nf.classList.add('show'); clearTimeout(nt); nt = setTimeout(() => nf.classList.remove('show'), 2200); }
+
+  // ══════════════════════════════
+  // ENTRY POINT — modal button
+  // ══════════════════════════════
+  async function enterWorld() {
+    await initAudio();
+    // Close modal
+    document.getElementById('intro-modal').classList.add('hidden');
+    // Start audio
+    startScheduler();
+    arc(0);
+    note('Journey begins');
+  }
+
+  // ══════════════════════════════
+  // ARC
+  // ══════════════════════════════
+  // Complete stem state per room — transitioning computes the diff automatically,
+  // so backward scrolling works correctly without fragile reverse-diff logic.
+  const ROOMS = [
+    { id:'scene-1', stems:['solo','harp'] },
+    { id:'scene-2', stems:['solo','harp','lightperc'] },
+    { id:'scene-3', stems:['solo','harp','lightperc','cello','lightorc'] },
+    { id:'scene-4', stems:['solo','cello','doublebass','choir'] },
+    { id:'scene-5', stems:['fullstring','medperc','choir'] },
+    { id:'outro',   stems:['fullstring','fullorc','heavyperc'] },
+  ];
+  let ai = -1;
+
+  function arc(idx) {
+    if (idx === ai || idx < 0) return;
+    const target = new Set(ROOMS[idx].stems);
+    STEMS.forEach(s => target.has(s) ? on(s) : off(s));
+    ai = idx;
+  }
+
+  // ══════════════════════════════
+  // PACE LOCK
+  // ══════════════════════════════
+  const pl = document.getElementById('pace-lock');
+  const pw = document.getElementById('pace-warning');
+  let locked = false, lockBot = 0, lt = null, wt = null, enfRaf = null;
+  const unlk = new Set();
+
+  function getLockBot(idx) {
+    // Recalculate dynamically — accounts for lazy-loaded images changing heights
+    const el = document.getElementById(ROOMS[idx].id);
+    return el ? el.offsetTop + el.offsetHeight - window.innerHeight : 0;
+  }
+
+  // rAF enforcement loop — runs every frame while locked to catch momentum scrolling
+  function enforceLoop() {
+    if (!locked) return;
+    lockBot = getLockBot(ai);
+    if (window.scrollY > lockBot) {
+      window.scrollTo({ top: lockBot, behavior: 'instant' });
+    }
+    enfRaf = requestAnimationFrame(enforceLoop);
+  }
+
+  function startLock(idx) {
+    locked = true;
+    lockBot = getLockBot(idx);
+    // Immediately enforce — user may already be past the boundary from fast-scrolling
+    if (window.scrollY > lockBot) window.scrollTo({ top: lockBot, behavior: 'instant' });
+    // Start per-frame enforcement (handles momentum scrolling)
+    cancelAnimationFrame(enfRaf);
+    enfRaf = requestAnimationFrame(enforceLoop);
+    pl.classList.remove('show');
+    clearTimeout(lt);
+    lt = setTimeout(() => {
+      locked = false;
+      cancelAnimationFrame(enfRaf);
+      unlk.add(idx);
+      pl.classList.add('show');
+      // Only show arrow if not in outro
+      if (!outroHit) showArrow();
+      setTimeout(() => pl.classList.remove('show'), 4000);
+    }, 10000);
+  }
+
+  function cancelLock() {
+    locked = false;
+    cancelAnimationFrame(enfRaf);
+    clearTimeout(lt);
+    lt = null;
+    pl.classList.remove('show');
+  }
+
+  function warn() {
+    pw.classList.add('show');
+    clearTimeout(wt);
+    wt = setTimeout(() => pw.classList.remove('show'), 1200);
+  }
+
+  // ══════════════════════════════
+  // OUTRO GATE
+  // ══════════════════════════════
+  let outroHit = false, creditsDone = false, outroLock = false;
+
+  // ══════════════════════════════
+  // SCROLL HANDLER
+  // ══════════════════════════════
+  const rv = document.querySelectorAll('.scene,.impact');
+  const pb = document.getElementById('progress-bar');
+
+  function onScroll() {
+    const sy = window.scrollY;
+    const dh = document.documentElement.scrollHeight - window.innerHeight;
+    pb.style.width = (sy / dh * 100) + '%';
+
+    // Visual in-view reveals
+    rv.forEach(el => { if (el.getBoundingClientRect().top < window.innerHeight * 0.85) el.classList.add('in-view'); });
+
+    if (!ready) return;
+
+    // Determine active arc index
+    let idx = -1;
+    ROOMS.forEach(({ id }, i) => {
+      const el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top < window.innerHeight * 0.5) idx = i;
+    });
+
+    const goingForward = idx > ai;
+
+    if (goingForward) {
+      // Find the first unvisited scene we're jumping past (excluding outro which has its own gate)
+      const lastScene = ROOMS.length - 2; // idx of last non-outro scene
+      let firstUnvisited = -1;
+      for (let i = ai + 1; i <= Math.min(idx, lastScene); i++) {
+        if (!unlk.has(i) && !asOn && !outroHit) { firstUnvisited = i; break; }
+      }
+      if (firstUnvisited !== -1) {
+        // Snap back to the first scene the user hasn't waited in yet and lock there
+        arc(firstUnvisited);
+        startLock(firstUnvisited); // startLock also enforces scroll position
+        checkImpactWeight();
+        return; // hold here — don't process outro gate until lock releases
+      }
+      arc(idx);
+    } else {
+      // Going backward — cancel active lock, never re-lock
+      if (idx < ai) cancelLock();
+      arc(idx);
+    }
+
+    // Outro gate
+    const oe = document.getElementById('outro');
+    if (oe && !outroHit && oe.getBoundingClientRect().top < window.innerHeight * 0.5) {
+      outroHit = true;
+      outroLock = true;
+      cancelLock(); // clear any section lock that was running
+
+      // Snap to outro and reveal text
+      window.scrollTo({ top: oe.offsetTop, behavior: 'smooth' });
+      document.querySelector('.outro-title').classList.add('revealed');
+      document.querySelector('.outro-sub').classList.add('revealed');
+
+      // Animate outro stem chart
+      document.getElementById('outro').classList.add('outro-in-view');
+
+      // Hold for one full loop (19.2s), then transition to credits
+      setTimeout(() => {
+        if (creditsDone) return;
+        creditsDone = true;
+        outroLock = false;
+
+        // FIX: correct stems to fade — fullstring was added in scene-5 remove array
+        // was never in outro arc, so still playing. Fade all heavy stems.
+        ['fullorc', 'heavyperc', 'fullstring', 'choir', 'medperc',
+         'doublebass', 'cello', 'lightperc'].forEach(off);
+        on('solo'); on('harp'); on('lightorc');
+
+        // Glow signal
+        pl.classList.add('show');
+        setTimeout(() => {
+          pl.classList.remove('show');
+          const c = document.getElementById('credits');
+          c.classList.add('revealed');
+          c.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Fade out after 3 more loops
+          setTimeout(() => fadeOut(), 57600);
+        }, 2000);
+      }, 19200);
+    }
+
+    checkImpactWeight();
+  }
+
+  window.addEventListener('scroll', () => {
+    // Outro lock — hold page on climax screen
+    if (outroLock) {
+      const o = document.getElementById('outro');
+      if (o) window.scrollTo({ top: o.offsetTop, behavior: 'instant' });
+      return;
+    }
+    // Pace lock — block forward scroll past section boundary
+    if (locked && ready && !muted && !asOn) {
+      if (window.scrollY > lockBot) {
+        window.scrollTo({ top: lockBot, behavior: 'instant' });
+        warn();
+        return;
+      }
+    }
+    onScroll();
+  }, { passive: false });
+
+  onScroll();
+
+  // ══════════════════════════════
+  // AUTO SCROLL
+  // ══════════════════════════════
+  let asOn = false, asRaf = null, asTgt = 0, asIdx = 0, asLast = 0;
+  const AS = ['scene-1','scene-2','scene-3','scene-4','scene-5','outro'];
+
+  function toggleAS() {
+    const b = document.getElementById('as-btn');
+    if (asOn) {
+      asOn = false;
+      cancelAnimationFrame(asRaf);
+      b.textContent = 'Auto Scroll'; b.classList.remove('on');
+    } else {
+      asOn = true;
+      cancelLock(); // cancel any active pace lock when auto-scroll begins
+      b.textContent = 'Stop'; b.classList.add('on');
+      asIdx = 0; asLast = performance.now();
+      const el = document.getElementById(AS[0]);
+      asTgt = el ? el.offsetTop : 0;
+      asRaf = requestAnimationFrame(asStep);
+    }
+  }
+
+  function asStep(now) {
+    if (!asOn) return;
+    if (now - asLast >= 10000 && asIdx < AS.length - 1) {
+      asIdx++; asLast = now;
+      const el = document.getElementById(AS[asIdx]);
+      if (el) asTgt = el.offsetTop;
+    }
+    const cur = window.scrollY, diff = asTgt - cur;
+    if (Math.abs(diff) > 0.5) window.scrollTo({ top: cur + diff * 0.04, behavior: 'instant' });
+    onScroll();
+    asRaf = requestAnimationFrame(asStep);
+  }
+
+  // Cancel auto-scroll on manual wheel input
+  window.addEventListener('wheel', () => {
+    if (asOn) {
+      asOn = false;
+      cancelAnimationFrame(asRaf);
+      const b = document.getElementById('as-btn');
+      b.textContent = 'Auto Scroll'; b.classList.remove('on');
+    }
+  }, { passive: true });
+
+  // ══════════════════════════════
+  // IMPACT WEIGHT
+  // ══════════════════════════════
+  // When an impact section is centred in the viewport, duck the mix to a breath-like
+  // hollow. Uses a dedicated impactGain node so it never conflicts with vol/mute.
+  const IMPACT_IDS = ['impact-1', 'impact-2'];
+  let impactThinned = false;
+
+  function checkImpactWeight() {
+    if (!impactGain || outroHit) return;
+    const vc = window.innerHeight * 0.5;
+    let nearImpact = false;
+    IMPACT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const elCenter = r.top + r.height * 0.5;
+      if (Math.abs(elCenter - vc) < window.innerHeight * 0.28) nearImpact = true;
+    });
+    if (nearImpact === impactThinned) return;
+    impactThinned = nearImpact;
+    const now = actx.currentTime;
+    impactGain.gain.cancelScheduledValues(now);
+    impactGain.gain.setValueAtTime(impactGain.gain.value, now);
+    if (nearImpact) {
+      // Hollow out the mix — solo string remains but the body thins
+      impactGain.gain.linearRampToValueAtTime(0.4, now + 1.8);
+    } else {
+      impactGain.gain.linearRampToValueAtTime(1, now + 2.2);
+    }
+  }
+
+  // ══════════════════════════════
+  // SCROLL ARROW
+  // ══════════════════════════════
+  const arrowEl = document.getElementById('scroll-arrow');
+  let arrowVisible = false, arrowHideTimer = null;
+
+  function showArrow() {
+    if (arrowVisible || outroHit) return;
+    arrowVisible = true;
+    arrowEl.classList.remove('hide');
+    arrowEl.classList.add('show');
+  }
+  function hideArrow() {
+    if (!arrowVisible) return;
+    arrowVisible = false;
+    arrowEl.classList.remove('show');
+    arrowEl.classList.add('hide');
+    clearTimeout(arrowHideTimer);
+    arrowHideTimer = setTimeout(() => arrowEl.classList.remove('hide'), 700);
+  }
+  window.addEventListener('scroll', () => { if (arrowVisible) hideArrow(); }, { passive: true });
+
+</script>
+</body>
+</html>
