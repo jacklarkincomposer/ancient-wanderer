@@ -128,8 +128,8 @@
   .arrow-chevron { width: 20px; height: 20px; border-right: 1px solid var(--gold); border-bottom: 1px solid var(--gold); transform: rotate(45deg); margin-top: -4px; animation: bounce 1.8s ease-in-out infinite; opacity: 0.7; }
   @keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(4px)} }
 
-  #visualiser { position: fixed; bottom: 0; left: 0; right: 0; height: 40px; z-index: 400; pointer-events: none; display: flex; align-items: flex-end; justify-content: stretch; gap: 1px; padding: 0 4px 3px; opacity: 0; transition: opacity 0.5s; }
-  #visualiser.active { opacity: 0.35; }
+  #visualiser { position: fixed; bottom: 0; left: 6%; right: 6%; height: 40px; z-index: 400; pointer-events: none; display: flex; align-items: flex-end; justify-content: stretch; gap: 1px; padding: 0 0 3px; opacity: 0; transition: opacity 0.5s; }
+  #visualiser.active { opacity: 0.4; filter: drop-shadow(0 0 6px rgba(201,168,76,0.5)); }
   .vb { flex: 1; min-width: 0; background: var(--gold); border-radius: 1px 1px 0 0; }
 
   /* ══════════════════════════════
@@ -606,15 +606,10 @@
       if (!buf[s] || !act.has(s)) return;
       const n = actx.createBufferSource();
       n.buffer = buf[s];
-      // Per-source crossfade envelope — fade in at start, fade out before buffer end
+      // Per-source fade-in envelope — natural reverb tail handles the loop-out end
       const env = actx.createGain();
-      const dur = buf[s].duration;
       env.gain.setValueAtTime(0, when);
       env.gain.linearRampToValueAtTime(1, when + CROSSFADE);
-      if (dur > CROSSFADE) {
-        env.gain.setValueAtTime(1, when + dur - CROSSFADE);
-        env.gain.linearRampToValueAtTime(0, when + dur);
-      }
       n.connect(env);
       env.connect(gain[s]);
       n.start(when);
@@ -654,15 +649,10 @@
       if (remaining < 0.05) return; // negligible gap — next scheduled source covers it
       const n = actx.createBufferSource();
       n.buffer = buf[s];
-      // Fade in from now; fade out toward the loop boundary to hand off cleanly
+      // Fade in from now — natural reverb tail handles the hand-off at the loop boundary
       const env = actx.createGain();
       env.gain.setValueAtTime(0, now);
       env.gain.linearRampToValueAtTime(1, now + CROSSFADE);
-      const fadeOutAt = now + remaining - CROSSFADE;
-      if (fadeOutAt > now + CROSSFADE) {
-        env.gain.setValueAtTime(1, fadeOutAt);
-        env.gain.linearRampToValueAtTime(0, now + remaining);
-      }
       n.connect(env);
       env.connect(g);
       n.start(0, offset);
@@ -938,7 +928,9 @@
       arc(idx);
     } else {
       // Going backward — cancel active lock, never re-lock
-      if (idx < ai) cancelLock();
+      // Only cancel for genuine backward navigation to a real room (idx >= 0),
+      // not when idx === -1 (hero section / pre-scroll state at startup)
+      if (idx >= 0 && idx < ai) cancelLock();
       arc(idx);
     }
 
