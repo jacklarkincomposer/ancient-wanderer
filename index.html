@@ -534,7 +534,7 @@
     mg = actx.createGain();
     mg.gain.value = 0.8;
     analyser = actx.createAnalyser();
-    analyser.fftSize = 256;
+    analyser.fftSize = 2048;
     analyserData = new Uint8Array(analyser.frequencyBinCount);
     impactGain = actx.createGain();
     impactGain.gain.value = 1;
@@ -550,7 +550,7 @@
 
     async function fetchStem(s, retries) {
       try {
-        const r = await fetch(CDN + SF[s]);
+        const r = await fetch(CDN + SF[s], { mode: 'cors', credentials: 'omit' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return await actx.decodeAudioData(await r.arrayBuffer());
       } catch(e) {
@@ -590,6 +590,7 @@
   const SCHED_INTERVAL = 200; // ms between scheduler ticks
   let schedNext = 0; // next loop start time on actx clock
   let schedTimer = null;
+  let loopEpoch = 0; // actx time when the first loop started
 
   function schedulerTick() {
     while (schedNext < actx.currentTime + SCHED_AHEAD) {
@@ -613,6 +614,7 @@
 
   function startScheduler() {
     schedNext = actx.currentTime + 0.1;
+    loopEpoch = schedNext;
     schedulerTick();
   }
 
@@ -631,6 +633,18 @@
     g.gain.cancelScheduledValues(now);
     g.gain.setValueAtTime(g.gain.value, now); // snapshot current value
     g.gain.linearRampToValueAtTime(1, now + 3);
+    // Start an immediate source at the correct loop offset so the fade has audio
+    if (buf[s] && actx && schedTimer) {
+      const offset = (now - loopEpoch) % LOOP;
+      const remaining = LOOP - offset;
+      const n = actx.createBufferSource();
+      n.buffer = buf[s];
+      n.connect(g);
+      n.start(0, offset);
+      n.stop(now + remaining);
+      activeSrc.push(n);
+      n.onended = () => { const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
+    }
     const d = document.getElementById('stem-'+s);
     if (d) d.classList.add('active');
     note('+ ' + s.toUpperCase());
@@ -719,11 +733,13 @@
     }
     ve.classList.add('active');
     analyser.getByteFrequencyData(analyserData);
-    const binCount = analyserData.length; // 128 bins from fftSize=256
-    const step = binCount / VIS_BARS;
+    const bins = analyserData.length;
+    const nyquist = actx.sampleRate / 2;
+    const minF = 30, maxF = 16000;
     for (let i = 0; i < VIS_BARS; i++) {
-      const bin = Math.floor(i * step);
-      const val = analyserData[bin] / 255; // 0-1
+      const freq = minF * Math.pow(maxF / minF, i / (VIS_BARS - 1));
+      const bin = Math.min(Math.round(freq / nyquist * bins), bins - 1);
+      const val = analyserData[bin] / 255;
       vb[i].style.height = Math.max(2, val * 34) + 'px';
     }
     visRaf = requestAnimationFrame(visLoop);
@@ -758,6 +774,7 @@
     // Start audio
     startScheduler();
     arc(0);
+    startLock(0);
     note('Journey begins');
   }
 
@@ -1002,8 +1019,10 @@
   }
 
   // Cancel auto-scroll on manual input (wheel, touch, pointer)
-  function cancelAS() {
+  function cancelAS(e) {
     if (!asOn) return;
+    // Don't cancel if the event targets the auto-scroll button (toggle handles it)
+    if (e && e.target && e.target.closest('#as-btn')) return;
     asOn = false;
     cancelAnimationFrame(asRaf);
     const b = document.getElementById('as-btn');
@@ -1076,7 +1095,7 @@
       actx.suspend();
     } else {
       actx.resume().then(() => {
-        if (ready && !fadingOut) startScheduler();
+        if (ready && !fadingOut && !schedTimer) schedulerTick();
         vis(); // restart visualiser if stems are active
       });
     }
