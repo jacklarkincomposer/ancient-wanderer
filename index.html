@@ -522,6 +522,22 @@
   const STEMS = Object.keys(SF);
   const LOOP = 19.2; // bars 1-16 at 150bpm 3/4
 
+  // Extend a decoded AudioBuffer by appending a fading copy of its beginning.
+  // The tail fades 1→0 over fadeDur seconds, giving each source a natural fade-out
+  // at the loop boundary so the incoming source can crossfade over it.
+  function extendBuffer(src, fadeDur) {
+    const sr = src.sampleRate;
+    const fadeSamples = Math.round(fadeDur * sr);
+    const out = actx.createBuffer(src.numberOfChannels, src.length + fadeSamples, sr);
+    for (let ch = 0; ch < src.numberOfChannels; ch++) {
+      const s = src.getChannelData(ch);
+      const d = out.getChannelData(ch);
+      for (let i = 0; i < src.length; i++) d[i] = s[i];
+      for (let i = 0; i < fadeSamples; i++) d[src.length + i] = s[i] * (1 - i / fadeSamples);
+    }
+    return out;
+  }
+
   let actx = null, mg = null, analyser = null, analyserData = null, impactGain = null, muted = false, ready = false;
   const act = new Set(), buf = {}, gain = {}, activeSrc = [];
 
@@ -552,7 +568,7 @@
       try {
         const r = await fetch(CDN + SF[s], { mode: 'cors', credentials: 'omit' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        return await actx.decodeAudioData(await r.arrayBuffer());
+        return extendBuffer(await actx.decodeAudioData(await r.arrayBuffer()), CROSSFADE);
       } catch(e) {
         if (retries > 0) {
           await new Promise(r => setTimeout(r, 2000));
@@ -606,10 +622,15 @@
       if (!buf[s] || !act.has(s)) return;
       const n = actx.createBufferSource();
       n.buffer = buf[s];
-      n.connect(gain[s]);
+      // Fade in so the new source crossfades with the previous source's baked tail
+      const env = actx.createGain();
+      env.gain.setValueAtTime(0, when);
+      env.gain.linearRampToValueAtTime(1, when + CROSSFADE);
+      n.connect(env);
+      env.connect(gain[s]);
       n.start(when);
       activeSrc.push(n);
-      n.onended = () => { const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
+      n.onended = () => { env.disconnect(); const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
     });
   }
 
