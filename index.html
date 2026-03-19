@@ -721,7 +721,7 @@
     analyser.getByteFrequencyData(analyserData);
     const bins = analyserData.length;
     const nyquist = actx.sampleRate / 2;
-    const minF = 80, maxF = 16000; // skip sub-bass noise below 80 Hz
+    const minF = 20, maxF = 20000; // skip sub-bass noise below 20 Hz
     for (let i = 0; i < VIS_BARS; i++) {
       const t = i / (VIS_BARS - 1); // 0→1 across bars
       const freq = minF * Math.pow(maxF / minF, t);
