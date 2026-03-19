@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Ancient Wanderer — Jack Larkin</title>
-<link rel="icon" href="../assets/images/logo.png" type="image/png">
+<link rel="icon" href="https://jacklarkincomposer.co.uk/assets/images/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
 
   :root {
     --gold: #c9a84c;
@@ -29,7 +31,7 @@
   #progress-bar { position: fixed; left: 0; top: 0; width: 0%; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); z-index: 600; transition: width 0.1s linear; }
 
   /* ── Notification ── */
-  #notification { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%) translateY(-16px); background: rgba(13,12,10,0.95); border: 1px solid var(--gold-dim); padding: 0.65rem 1.5rem; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); z-index: 700; opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none; white-space: nowrap; backdrop-filter: blur(8px); }
+  #notification { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%) translateY(-16px); background: rgba(13,12,10,0.95); border: 1px solid var(--gold-dim); padding: 0.65rem 1.5rem; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); z-index: 700; opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none; white-space: nowrap; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   #notification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ══════════════════════════════
@@ -56,7 +58,7 @@
     text-transform: uppercase; color: var(--gold);
     border: 1px solid var(--gold-dim); background: rgba(13,12,10,0.92);
     padding: 0.7rem 1.3rem; min-height: 44px; min-width: 44px;
-    cursor: none; transition: all 0.3s; backdrop-filter: blur(8px);
+    cursor: none; transition: all 0.3s; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
     white-space: nowrap; display: flex; align-items: center; justify-content: center;
   }
   .ctrl-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.1); }
@@ -72,14 +74,14 @@
   #pace-lock { position: fixed; bottom: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 800; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
   #pace-lock.show { opacity: 1; background: linear-gradient(90deg, transparent, var(--gold), transparent); box-shadow: 0 0 20px 4px rgba(201,168,76,0.35); animation: gpulse 1.5s ease-in-out 3; }
   @keyframes gpulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
-  #pace-warning { position: fixed; bottom: 2.5rem; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(13,12,10,0.95); border: 1px solid var(--gold-dim); padding: 0.55rem 1.6rem; font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); z-index: 800; opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; backdrop-filter: blur(8px); }
+  #pace-warning { position: fixed; bottom: 2.5rem; left: 50%; transform: translateX(-50%) translateY(8px); background: rgba(13,12,10,0.95); border: 1px solid var(--gold-dim); padding: 0.55rem 1.6rem; font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); z-index: 800; opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
   #pace-warning.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   /* ── Intro modal ── */
   #intro-modal {
     position: fixed; inset: 0; z-index: 2000;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(13,12,10,0.97); backdrop-filter: blur(12px);
+    background: rgba(13,12,10,0.97); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
     opacity: 1; transition: opacity 1s;
   }
   #intro-modal.hidden { opacity: 0; pointer-events: none; }
@@ -239,6 +241,30 @@
 
   /* ── Mobile: restore cursor on touch devices ── */
   @media (hover: none) { body { cursor: auto; } .cursor, .cursor-ring { display: none; } }
+
+  /* ── Mobile: responsive layout ── */
+  @media (max-width: 768px) {
+    .scene-body { grid-template-columns: 1fr; gap: 2vh; padding: 2vh 5vw 0; }
+    .intro-box { padding: 2rem 1.5rem; }
+    #controls { bottom: 1rem; right: 1rem; }
+    .hero-sub { padding: 0 1.5rem; }
+  }
+
+  /* ── Keyboard focus fallback ── */
+  :focus-visible { cursor: auto; outline: 2px solid var(--gold); outline-offset: 4px; }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ── Compositing hints ── */
+  .cursor, .cursor-ring { will-change: transform; }
+  #progress-bar { will-change: width; }
 </style>
 </head>
 <body>
@@ -254,7 +280,7 @@
       <div class="intro-hint"><span class="icon">⏳</span> Each section asks you to pause and listen</div>
       <div class="intro-hint"><span class="icon">♪</span> Use headphones for the full experience</div>
     </div>
-    <button class="intro-enter" id="intro-btn" onclick="enterWorld()">Enter the World</button>
+    <button class="intro-enter" id="intro-btn" onclick="enterWorld()" aria-label="Enter the experience and begin audio playback">Enter the World</button>
   </div>
 </div>
 
@@ -288,12 +314,12 @@
     <div class="stem-dot" id="stem-heavyperc"><span>Heavy Perc</span><div class="dot"></div></div>
   </div>
   <div class="ctrl-row">
-    <button class="ctrl-btn" id="as-btn" onclick="toggleAS()">Auto Scroll</button>
-    <button class="ctrl-btn" id="mute-btn" onclick="toggleMute()">♪</button>
+    <button class="ctrl-btn" id="as-btn" onclick="toggleAS()" aria-pressed="false">Auto Scroll</button>
+    <button class="ctrl-btn" id="mute-btn" onclick="toggleMute()" aria-label="Toggle mute" aria-pressed="false">♪</button>
   </div>
   <div id="volume-wrap">
-    <label>Vol</label>
-    <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" oninput="setVol(this.value)">
+    <label for="vol">Vol</label>
+    <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" oninput="setVol(this.value)" aria-label="Master volume">
   </div>
 </div>
 
@@ -473,13 +499,15 @@
   // ══════════════════════════════
   const cur = document.getElementById('cursor');
   const ring = document.getElementById('cursor-ring');
-  let mx = 0, my = 0, rx = 0, ry = 0;
-  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx+'px'; cur.style.top = my+'px'; });
-  (function tick() { rx += (mx-rx)*0.12; ry += (my-ry)*0.12; ring.style.left = rx+'px'; ring.style.top = ry+'px'; requestAnimationFrame(tick); })();
-  document.querySelectorAll('button,.begin-btn,.intro-enter').forEach(el => {
-    el.addEventListener('mouseenter', () => { ring.style.width='48px'; ring.style.height='48px'; ring.style.borderColor='var(--gold)'; });
-    el.addEventListener('mouseleave', () => { ring.style.width='34px'; ring.style.height='34px'; ring.style.borderColor='rgba(201,168,76,0.4)'; });
-  });
+  if (!window.matchMedia('(hover: none)').matches) {
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cur.style.left = mx+'px'; cur.style.top = my+'px'; });
+    (function tick() { rx += (mx-rx)*0.12; ry += (my-ry)*0.12; ring.style.left = rx+'px'; ring.style.top = ry+'px'; requestAnimationFrame(tick); })();
+    document.querySelectorAll('button,.begin-btn,.intro-enter').forEach(el => {
+      el.addEventListener('mouseenter', () => { ring.style.width='48px'; ring.style.height='48px'; ring.style.borderColor='var(--gold)'; });
+      el.addEventListener('mouseleave', () => { ring.style.width='34px'; ring.style.height='34px'; ring.style.borderColor='rgba(201,168,76,0.4)'; });
+    });
+  }
 
   // ══════════════════════════════
   // AUDIO ENGINE
@@ -494,31 +522,55 @@
   const STEMS = Object.keys(SF);
   const LOOP = 19.2; // bars 1-16 at 150bpm 3/4
 
-  let actx = null, mg = null, impactGain = null, muted = false, ready = false;
+  let actx = null, mg = null, analyser = null, analyserData = null, impactGain = null, muted = false, ready = false;
   const act = new Set(), buf = {}, gain = {}, activeSrc = [];
 
   async function initAudio() {
     if (actx) return;
     actx = new (window.AudioContext || window.webkitAudioContext)();
+    actx.onstatechange = () => {
+      if (actx.state === 'suspended') actx.resume();
+    };
     mg = actx.createGain();
     mg.gain.value = 0.8;
+    analyser = actx.createAnalyser();
+    analyser.fftSize = 256;
+    analyserData = new Uint8Array(analyser.frequencyBinCount);
     impactGain = actx.createGain();
     impactGain.gain.value = 1;
-    mg.connect(impactGain);
+    mg.connect(analyser);
+    analyser.connect(impactGain);
     impactGain.connect(actx.destination);
 
     const btn = document.getElementById('intro-btn');
-    if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+    let loaded = 0;
+    const total = STEMS.length;
+    function updateBtn() { if (btn) btn.textContent = 'Loading ' + loaded + '/' + total + '…'; }
+    if (btn) { updateBtn(); btn.disabled = true; }
 
-    await Promise.all(STEMS.map(async s => {
+    async function fetchStem(s, retries) {
       try {
         const r = await fetch(CDN + SF[s]);
-        buf[s] = await actx.decodeAudioData(await r.arrayBuffer());
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return await actx.decodeAudioData(await r.arrayBuffer());
       } catch(e) {
-        console.warn('Stem failed:', s, e);
-        buf[s] = null;
+        if (retries > 0) {
+          await new Promise(r => setTimeout(r, 2000));
+          return fetchStem(s, retries - 1);
+        }
+        console.warn('Stem failed after retries:', s, e);
+        return null;
       }
+    }
+
+    await Promise.all(STEMS.map(async s => {
+      buf[s] = await fetchStem(s, 1);
+      loaded++;
+      updateBtn();
     }));
+
+    // Warn if critical stems failed
+    if (!buf.solo || !buf.harp) note('Some audio stems failed to load');
 
     STEMS.forEach(s => {
       const g = actx.createGain();
@@ -534,7 +586,7 @@
   // ── Lookahead scheduler — drift-proof ──
   // Schedules sources up to SCHED_AHEAD seconds in advance on a short interval.
   // Uses the Web Audio clock exclusively — immune to JS timer jitter.
-  const SCHED_AHEAD = 0.5; // seconds to schedule ahead
+  const SCHED_AHEAD = 1.5; // seconds to schedule ahead (>1s to survive background tab throttling)
   const SCHED_INTERVAL = 200; // ms between scheduler ticks
   let schedNext = 0; // next loop start time on actx clock
   let schedTimer = null;
@@ -549,7 +601,7 @@
 
   function schedGeneration(when) {
     STEMS.forEach(s => {
-      if (!buf[s]) return;
+      if (!buf[s] || !act.has(s)) return;
       const n = actx.createBufferSource();
       n.buffer = buf[s];
       n.connect(gain[s]);
@@ -608,7 +660,7 @@
     if (parseFloat(v) > 0 && muted) {
       muted = false;
       const b = document.getElementById('mute-btn');
-      b.textContent = '♪'; b.style.color = 'var(--gold)';
+      b.textContent = '♪'; b.style.color = 'var(--gold)'; b.setAttribute('aria-pressed', 'false');
     }
   }
 
@@ -621,11 +673,12 @@
     mg.gain.setValueAtTime(mg.gain.value, now);
     if (muted) {
       mg.gain.linearRampToValueAtTime(0, now + 0.5);
-      b.textContent = '✕'; b.style.color = 'var(--text-dim)';
+      b.textContent = '✕'; b.style.color = 'var(--text-dim)'; b.setAttribute('aria-pressed', 'true');
     } else {
       mg.gain.linearRampToValueAtTime(parseFloat(document.getElementById('vol').value), now + 0.5);
-      b.textContent = '♪'; b.style.color = 'var(--gold)';
+      b.textContent = '♪'; b.style.color = 'var(--gold)'; b.setAttribute('aria-pressed', 'false');
     }
+    vis();
   }
 
   // Fade out master — guards against conflict with mute
@@ -637,24 +690,55 @@
     mg.gain.cancelScheduledValues(now);
     mg.gain.setValueAtTime(mg.gain.value, now);
     mg.gain.linearRampToValueAtTime(0, now + 8);
-    setTimeout(() => { if (ve) ve.classList.remove('active'); }, 4000);
+    setTimeout(() => {
+      if (ve) ve.classList.remove('active');
+      if (visRaf) { cancelAnimationFrame(visRaf); visRaf = null; }
+    }, 8000);
   }
 
   // ══════════════════════════════
   // VISUALISER
   // ══════════════════════════════
   const ve = document.getElementById('visualiser');
+  const VIS_BARS = 60;
   const vb = [];
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < VIS_BARS; i++) {
     const b = document.createElement('div');
     b.className = 'vb'; b.style.height = '2px';
     ve.appendChild(b); vb.push(b);
   }
+
+  // AnalyserNode-driven visualiser — runs on rAF when stems are active
+  let visRaf = null;
+  function visLoop() {
+    if (!analyser || act.size === 0 || muted) {
+      ve.classList.remove('active');
+      vb.forEach(b => { b.style.height = '2px'; });
+      visRaf = null;
+      return;
+    }
+    ve.classList.add('active');
+    analyser.getByteFrequencyData(analyserData);
+    const binCount = analyserData.length; // 128 bins from fftSize=256
+    const step = binCount / VIS_BARS;
+    for (let i = 0; i < VIS_BARS; i++) {
+      const bin = Math.floor(i * step);
+      const val = analyserData[bin] / 255; // 0-1
+      vb[i].style.height = Math.max(2, val * 34) + 'px';
+    }
+    visRaf = requestAnimationFrame(visLoop);
+  }
+
   function vis() {
-    const n = act.size, mh = Math.min(n * 7, 34);
-    vb.forEach((b, i) => { b.style.height = Math.max(2, Math.random()*mh*Math.sin(i/60*Math.PI))+'px'; });
-    if (n > 0 && !muted) ve.classList.add('active');
-    else ve.classList.remove('active');
+    // Called on stem on/off — start or stop the analyser loop
+    if (act.size > 0 && !muted && !visRaf) {
+      visRaf = requestAnimationFrame(visLoop);
+    } else if ((act.size === 0 || muted) && visRaf) {
+      cancelAnimationFrame(visRaf);
+      visRaf = null;
+      ve.classList.remove('active');
+      vb.forEach(b => { b.style.height = '2px'; });
+    }
   }
 
   // ══════════════════════════════
@@ -716,12 +800,14 @@
   // rAF enforcement loop — runs every frame while locked to catch momentum scrolling
   function enforceLoop() {
     if (!locked) return;
-    lockBot = getLockBot(ai);
     if (window.scrollY > lockBot) {
       window.scrollTo({ top: lockBot, behavior: 'instant' });
     }
     enfRaf = requestAnimationFrame(enforceLoop);
   }
+
+  // Recalculate lockBot on resize (e.g. lazy images shifting layout)
+  window.addEventListener('resize', () => { if (locked) lockBot = getLockBot(ai); });
 
   function startLock(idx) {
     locked = true;
@@ -766,16 +852,18 @@
   // ══════════════════════════════
   // SCROLL HANDLER
   // ══════════════════════════════
-  const rv = document.querySelectorAll('.scene,.impact');
+  // IntersectionObserver for in-view reveals (replaces per-scroll getBoundingClientRect)
+  const revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in-view'); revealObs.unobserve(e.target); } });
+  }, { threshold: 0, rootMargin: '0px 0px -15% 0px' });
+  document.querySelectorAll('.scene,.impact').forEach(el => revealObs.observe(el));
+
   const pb = document.getElementById('progress-bar');
 
   function onScroll() {
     const sy = window.scrollY;
     const dh = document.documentElement.scrollHeight - window.innerHeight;
     pb.style.width = (sy / dh * 100) + '%';
-
-    // Visual in-view reveals
-    rv.forEach(el => { if (el.getBoundingClientRect().top < window.innerHeight * 0.85) el.classList.add('in-view'); });
 
     if (!ready) return;
 
@@ -853,6 +941,10 @@
   }
 
   window.addEventListener('scroll', () => {
+    // Resume AudioContext on user gesture (belt-and-suspenders for mobile Safari)
+    if (actx && actx.state === 'suspended') actx.resume();
+    // Hide scroll arrow on any scroll
+    if (arrowVisible) hideArrow();
     // Outro lock — hold page on climax screen
     if (outroLock) {
       const o = document.getElementById('outro');
@@ -868,7 +960,7 @@
       }
     }
     onScroll();
-  }, { passive: false });
+  }, { passive: true });
 
   onScroll();
 
@@ -883,11 +975,11 @@
     if (asOn) {
       asOn = false;
       cancelAnimationFrame(asRaf);
-      b.textContent = 'Auto Scroll'; b.classList.remove('on');
+      b.textContent = 'Auto Scroll'; b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
     } else {
       asOn = true;
       cancelLock(); // cancel any active pace lock when auto-scroll begins
-      b.textContent = 'Stop'; b.classList.add('on');
+      b.textContent = 'Stop'; b.classList.add('on'); b.setAttribute('aria-pressed', 'true');
       asIdx = 0; asLast = performance.now();
       const el = document.getElementById(AS[0]);
       asTgt = el ? el.offsetTop : 0;
@@ -897,6 +989,7 @@
 
   function asStep(now) {
     if (!asOn) return;
+    if (outroHit) { cancelAS(); return; }
     if (now - asLast >= 10000 && asIdx < AS.length - 1) {
       asIdx++; asLast = now;
       const el = document.getElementById(AS[asIdx]);
@@ -908,15 +1001,17 @@
     asRaf = requestAnimationFrame(asStep);
   }
 
-  // Cancel auto-scroll on manual wheel input
-  window.addEventListener('wheel', () => {
-    if (asOn) {
-      asOn = false;
-      cancelAnimationFrame(asRaf);
-      const b = document.getElementById('as-btn');
-      b.textContent = 'Auto Scroll'; b.classList.remove('on');
-    }
-  }, { passive: true });
+  // Cancel auto-scroll on manual input (wheel, touch, pointer)
+  function cancelAS() {
+    if (!asOn) return;
+    asOn = false;
+    cancelAnimationFrame(asRaf);
+    const b = document.getElementById('as-btn');
+    b.textContent = 'Auto Scroll'; b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
+  }
+  window.addEventListener('wheel', cancelAS, { passive: true });
+  window.addEventListener('touchstart', cancelAS, { passive: true });
+  window.addEventListener('pointerdown', cancelAS, { passive: true });
 
   // ══════════════════════════════
   // IMPACT WEIGHT
@@ -970,7 +1065,22 @@
     clearTimeout(arrowHideTimer);
     arrowHideTimer = setTimeout(() => arrowEl.classList.remove('hide'), 700);
   }
-  window.addEventListener('scroll', () => { if (arrowVisible) hideArrow(); }, { passive: true });
+  // ══════════════════════════════
+  // VISIBILITY — suspend/resume on tab hide/show
+  // ══════════════════════════════
+  document.addEventListener('visibilitychange', () => {
+    if (!actx) return;
+    if (document.hidden) {
+      stopScheduler();
+      if (visRaf) { cancelAnimationFrame(visRaf); visRaf = null; }
+      actx.suspend();
+    } else {
+      actx.resume().then(() => {
+        if (ready && !fadingOut) startScheduler();
+        vis(); // restart visualiser if stems are active
+      });
+    }
+  });
 
 </script>
 </body>
