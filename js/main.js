@@ -81,6 +81,7 @@ async function boot() {
     engine.startScheduler();
     scroll.startLock(0);
     scroll.start();
+    document.body.classList.remove('scroll-locked');
     ui.note('Journey begins');
   });
 }

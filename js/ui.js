@@ -130,22 +130,6 @@ export function initUI(config, engine) {
     document.getElementById('intro-modal').classList.add('hidden');
   }
 
-  // ── Visibility change ──
-  document.addEventListener('visibilitychange', () => {
-    const actx = engine.getContext();
-    if (!actx) return;
-    if (document.hidden) {
-      engine.stopScheduler();
-      stopVisualiser();
-      actx.suspend();
-    } else {
-      actx.resume().then(() => {
-        if (engine.ready && !engine.fadingOut) engine.startScheduler();
-        vis();
-      });
-    }
-  });
-
   return {
     note,
     vis,

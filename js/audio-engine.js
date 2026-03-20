@@ -75,6 +75,7 @@ export function createAudioEngine(config) {
           g.connect(mg);
           gain[id] = g;
         }
+        scheduleImmediately(id);
         // Check pending fades
         if (pendingFades.has(id)) {
           const roomIdx = pendingFades.get(id);
@@ -101,6 +102,18 @@ export function createAudioEngine(config) {
   }
 
   // ── Scheduler ──
+  function scheduleImmediately(id) {
+    if (!schedRunning || !buf[id] || !gain[id]) return;
+    const loopStart = schedNext - currentLoopDuration;
+    const loopOffset = Math.max(0, actx.currentTime - loopStart);
+    const n = actx.createBufferSource();
+    n.buffer = buf[id];
+    n.connect(gain[id]);
+    n.start(actx.currentTime + 0.05, loopOffset % currentLoopDuration);
+    activeSrc.push(n);
+    n.onended = () => { const i = activeSrc.indexOf(n); if (i > -1) activeSrc.splice(i, 1); };
+  }
+
   function schedulerTick() {
     if (!schedRunning) return;
     while (schedNext < actx.currentTime + audio.scheduleAhead) {
@@ -310,6 +323,7 @@ export function createAudioEngine(config) {
             g.connect(mg);
             gain[id] = g;
           }
+          scheduleImmediately(id);
           stemLoadedCallbacks.forEach(cb => cb(id));
         }
       } catch (e) {
