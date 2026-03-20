@@ -137,7 +137,7 @@ export function initUI(config, engine) {
       actx.suspend();
     } else {
       actx.resume().then(() => {
-        if (engine.ready && !engine.fadingOut && !engine.schedTimer) engine.schedulerTick();
+        if (engine.ready && !engine.fadingOut) engine.startScheduler();
         vis();
       });
     }

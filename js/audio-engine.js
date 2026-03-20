@@ -19,6 +19,7 @@ export function createAudioEngine(config) {
 
   let schedNext = 0;
   let schedTimer = null;
+  let schedRunning = false;
   let currentRoomIndex = -1;
   let currentLoopDuration = audio.defaultLoop.duration;
 
@@ -26,9 +27,6 @@ export function createAudioEngine(config) {
   async function init() {
     if (actx) return;
     actx = new (window.AudioContext || window.webkitAudioContext)();
-    actx.onstatechange = () => {
-      if (actx.state === 'suspended') actx.resume();
-    };
     mg = actx.createGain();
     mg.gain.value = audio.masterGain;
     analyser = actx.createAnalyser();
@@ -102,6 +100,7 @@ export function createAudioEngine(config) {
 
   // ── Scheduler ──
   function schedulerTick() {
+    if (!schedRunning) return;
     while (schedNext < actx.currentTime + audio.scheduleAhead) {
       schedGeneration(schedNext);
       schedNext += currentLoopDuration;
@@ -110,10 +109,8 @@ export function createAudioEngine(config) {
   }
 
   function schedGeneration(when) {
-    // Only schedule stems in the current room that are loaded
-    const roomStems = currentRoomIndex >= 0 ? config.rooms[currentRoomIndex].stems : [];
-    roomStems.forEach(id => {
-      if (!buf[id]) return;
+    loadedStems.forEach(id => {
+      if (!buf[id] || !gain[id]) return;
       const n = actx.createBufferSource();
       n.buffer = buf[id];
       n.connect(gain[id]);
@@ -124,11 +121,14 @@ export function createAudioEngine(config) {
   }
 
   function startScheduler() {
+    if (schedRunning) return;
+    schedRunning = true;
     schedNext = actx.currentTime + 0.1;
     schedulerTick();
   }
 
   function stopScheduler() {
+    schedRunning = false;
     clearTimeout(schedTimer);
     schedTimer = null;
   }
@@ -314,7 +314,6 @@ export function createAudioEngine(config) {
     set ready(v) { ready = v; },
     get muted() { return muted; },
     get fadingOut() { return fadingOut; },
-    get schedTimer() { return schedTimer; },
-    schedulerTick,
+    get schedRunning() { return schedRunning; },
   };
 }
