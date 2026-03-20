@@ -102,6 +102,33 @@
   .intro-enter::before { content:''; position:absolute; inset:0; background:var(--gold); transform:translateX(-101%); transition:transform 0.4s; z-index:-1; }
   .intro-enter:hover::before { transform:translateX(0); }
   .intro-enter:hover { color: var(--ash); }
+  .loading-bar-wrap {
+    width: 100%; height: 2px; background: rgba(201,168,76,0.12);
+    margin-top: 1.2rem; overflow: hidden; opacity: 0; transition: opacity 0.3s;
+  }
+  .loading-bar-wrap.active { opacity: 1; }
+  .loading-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    transition: width 0.4s ease;
+    box-shadow: 0 0 8px rgba(201,168,76,0.5);
+  }
+
+  /* Pre-show state — before audio is fetched */
+  #intro-modal.pre-show { opacity: 0; pointer-events: none; }
+
+  /* Fetch progress bar (top of page, visible during background fetch) */
+  #fetch-bar-wrap {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px;
+    background: rgba(201,168,76,0.08); z-index: 1999;
+    pointer-events: none; opacity: 0; transition: opacity 0.4s;
+  }
+  #fetch-bar-wrap.active { opacity: 1; }
+  #fetch-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    transition: width 0.5s ease;
+  }
 
   /* ── Scroll arrow ── */
   #scroll-arrow {
@@ -113,9 +140,9 @@
   }
   #scroll-arrow.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #scroll-arrow.hide { opacity: 0; transform: translateX(-50%) translateY(10px); }
-  .arrow-label { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-dim); }
-  .arrow-chevron { width: 20px; height: 20px; border-right: 1px solid var(--gold); border-bottom: 1px solid var(--gold); transform: rotate(45deg); margin-top: -4px; animation: bounce 1.8s ease-in-out infinite; opacity: 0.7; }
-  @keyframes bounce { 0%,100%{transform:rotate(45deg) translateY(0)} 50%{transform:rotate(45deg) translateY(4px)} }
+  .arrow-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); text-shadow: 0 0 12px rgba(201,168,76,0.6); }
+  .arrow-chevron { width: 26px; height: 26px; border-right: 1px solid var(--gold); border-bottom: 1px solid var(--gold); transform: rotate(45deg); margin-top: -6px; animation: bounce 1.8s ease-in-out infinite; opacity: 0.85; }
+  @keyframes bounce { 0%,100%{transform:translateY(0) rotate(45deg)} 50%{transform:translateY(5px) rotate(45deg)} }
 
   #visualiser { position: fixed; bottom: 0; left: 6%; right: 6%; height: 40px; z-index: 400; pointer-events: none; display: flex; align-items: flex-end; justify-content: stretch; gap: 1px; padding: 0 0 3px; opacity: 0; transition: opacity 0.5s; }
   #visualiser.active { opacity: 0.4; filter: drop-shadow(0 0 6px rgba(201,168,76,0.5)); }

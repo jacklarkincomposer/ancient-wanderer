@@ -58,8 +58,10 @@ export function initUI(config, engine) {
       const freq = minF * Math.pow(maxF / minF, t);
       const bin = Math.min(Math.round(freq / nyquist * bins), bins - 1);
       const raw = analyserData[bin] / 255;
-      const emphasis = 0.6 + 0.8 * t;
-      vb[i].style.height = Math.max(2, Math.min(raw * emphasis, 1) * 36) + 'px';
+      const bassRolloff = Math.pow(t, 0.4);
+      const emphasis = (0.3 + 1.1 * t) * (0.4 + 0.6 * bassRolloff);
+      const bellEnv = 0.3 + 0.7 * Math.sin(t * Math.PI);
+      vb[i].style.height = Math.max(2, Math.min(raw * emphasis, 1) * 36 * bellEnv) + 'px';
     }
     visRaf = requestAnimationFrame(visLoop);
   }
@@ -90,10 +92,11 @@ export function initUI(config, engine) {
   let arrowVisible = false, arrowHideTimer = null;
 
   function showArrow() {
-    if (arrowVisible) return;
+    clearTimeout(arrowHideTimer);
     arrowVisible = true;
     arrowEl.classList.remove('hide');
     arrowEl.classList.add('show');
+    arrowHideTimer = setTimeout(() => hideArrow(), 3500);
   }
 
   function hideArrow() {

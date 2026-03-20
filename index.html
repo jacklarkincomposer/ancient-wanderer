@@ -13,7 +13,7 @@
 <body>
 
 <!-- Intro modal — single entry point, triggers audio -->
-<div id="intro-modal">
+<div id="intro-modal" class="pre-show">
   <div class="intro-box">
     <p class="intro-eyebrow">An Audiovisual Experience</p>
     <h2 class="intro-title">The Ancient Wanderer</h2>
@@ -24,6 +24,9 @@
       <div class="intro-hint"><span class="icon">♪</span> Use headphones for the full experience</div>
     </div>
     <button class="intro-enter" id="intro-btn" aria-label="Enter the experience and begin audio playback">Enter the World</button>
+    <div class="loading-bar-wrap">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
   </div>
 </div>
 
@@ -36,6 +39,7 @@
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursor-ring"></div>
 <div id="progress-bar"></div>
+<div id="fetch-bar-wrap"><div id="fetch-bar"></div></div>
 <div id="notification"></div>
 <div id="pace-lock"></div>
 <div id="pace-warning">Scrolling too fast</div>

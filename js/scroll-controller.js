@@ -189,22 +189,23 @@ export function createScrollController(config, engine, loader, ui) {
   }
 
   // ── Auto scroll ──
-  let asOn = false, asRaf = null, asTgt = 0, asIdx = 0, asLast = 0;
-  const asIds = rooms.map(r => r.id);
+  let asOn = false, asRaf = null, asLast = 0;
+  let asPaused = false, asPauseTimer = null;
+  const AS_SPEED = 40; // px per second
+  const AS_PAUSE_DURATION = 3500; // ms
 
   function toggleAS() {
     const b = document.getElementById('as-btn');
     if (asOn) {
-      asOn = false;
+      asOn = false; asPaused = false;
+      clearTimeout(asPauseTimer);
       cancelAnimationFrame(asRaf);
       b.textContent = 'Auto Scroll'; b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
     } else {
-      asOn = true;
+      asOn = true; asPaused = false;
       cancelLock();
       b.textContent = 'Stop'; b.classList.add('on'); b.setAttribute('aria-pressed', 'true');
-      asIdx = 0; asLast = performance.now();
-      const el = document.getElementById(asIds[0]);
-      asTgt = el ? el.offsetTop : 0;
+      asLast = performance.now();
       asRaf = requestAnimationFrame(asStep);
     }
   }
@@ -212,21 +213,38 @@ export function createScrollController(config, engine, loader, ui) {
   function asStep(now) {
     if (!asOn) return;
     if (outroHit) { cancelAS(); return; }
-    if (now - asLast >= 10000 && asIdx < asIds.length - 1) {
-      asIdx++; asLast = now;
-      const el = document.getElementById(asIds[asIdx]);
-      if (el) asTgt = el.offsetTop;
+    const dt = (now - asLast) / 1000;
+    asLast = now;
+    if (!asPaused) {
+      window.scrollBy({ top: AS_SPEED * dt, behavior: 'instant' });
+      onScroll();
+      // Pause when current scene image is ≥80% in view
+      let sceneEl = null;
+      rooms.forEach(({ id }) => {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < window.innerHeight * 0.5) sceneEl = el;
+      });
+      if (sceneEl) {
+        const img = sceneEl.querySelector('.scene-frame img');
+        if (img) {
+          const r = img.getBoundingClientRect();
+          const visible = Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0);
+          if (r.height > 0 && visible / r.height >= 0.8) {
+            asPaused = true;
+            clearTimeout(asPauseTimer);
+            asPauseTimer = setTimeout(() => { asPaused = false; }, AS_PAUSE_DURATION);
+          }
+        }
+      }
     }
-    const cur = window.scrollY, diff = asTgt - cur;
-    if (Math.abs(diff) > 0.5) window.scrollTo({ top: cur + diff * 0.04, behavior: 'instant' });
-    onScroll();
     asRaf = requestAnimationFrame(asStep);
   }
 
   function cancelAS(e) {
     if (!asOn) return;
     if (e && e.target && e.target.closest('#as-btn')) return;
-    asOn = false;
+    asOn = false; asPaused = false;
+    clearTimeout(asPauseTimer);
     cancelAnimationFrame(asRaf);
     const b = document.getElementById('as-btn');
     b.textContent = 'Auto Scroll'; b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');

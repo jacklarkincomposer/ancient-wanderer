@@ -39,30 +39,45 @@ async function boot() {
 
   document.getElementById('as-btn').addEventListener('click', () => scroll.toggleAS());
 
-  // Entry point — "Enter the World" button
+  // ── Phase 1: fetch audio in background (no AudioContext needed) ──
+  const initialStems = config.rooms[0].stems;
+  const nextStems = config.rooms.length > 1 ? config.rooms[1].stems : [];
+  const allInitial = [...new Set([...initialStems, ...nextStems])];
+  const total = allInitial.length;
+
+  const fetchBarWrap = document.getElementById('fetch-bar-wrap');
+  const fetchBar = document.getElementById('fetch-bar');
+  fetchBarWrap.classList.add('active');
+
+  let fetched = 0;
+  await engine.prefetchStems(allInitial, () => {
+    fetched++;
+    fetchBar.style.width = (fetched / total * 100) + '%';
+  });
+
+  // Fetch done — hide fetch bar, reveal modal
+  fetchBarWrap.classList.remove('active');
+  document.getElementById('intro-modal').classList.remove('pre-show');
+
+  // ── Phase 2: user clicks → AudioContext + decode + start ──
   const introBtn = document.getElementById('intro-btn');
   introBtn.addEventListener('click', async () => {
     introBtn.disabled = true;
+    const loadingBarWrap = document.querySelector('.loading-bar-wrap');
+    const loadingBar = document.getElementById('loading-bar');
+    loadingBarWrap.classList.add('active');
+    loadingBar.style.width = '30%';
+
     await engine.init();
+    await engine.decodePreFetched(allInitial);
 
-    // Load initial stems with progress
-    let loaded = 0;
-    const initialStems = config.rooms[0].stems;
-    const nextStems = config.rooms.length > 1 ? config.rooms[1].stems : [];
-    const allInitial = [...new Set([...initialStems, ...nextStems])];
-    const total = allInitial.length;
-    introBtn.textContent = 'Loading 0/' + total + '\u2026';
-
-    await engine.loadStems(allInitial, () => {
-      loaded++;
-      introBtn.textContent = 'Loading ' + loaded + '/' + total + '\u2026';
-    });
+    loadingBar.style.width = '100%';
+    await new Promise(r => setTimeout(r, 300));
 
     engine.ready = true;
-
-    // Close modal and start
     ui.closeModal();
     engine.setRoom(0);
+    ui.updateStemIndicators(engine);
     engine.startScheduler();
     scroll.startLock(0);
     scroll.start();

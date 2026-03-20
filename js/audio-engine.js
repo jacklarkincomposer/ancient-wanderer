@@ -17,6 +17,8 @@ export function createAudioEngine(config) {
   const pendingFades = new Map();
   const stemLoadedCallbacks = [];
 
+  const prefetchedBuffers = {}; // id → ArrayBuffer (raw, not decoded)
+
   let schedNext = 0;
   let schedTimer = null;
   let schedRunning = false;
@@ -277,6 +279,45 @@ export function createAudioEngine(config) {
     n.start();
   }
 
+  // ── Prefetch / decode (background load before AudioContext) ──
+  async function prefetchStems(ids, onProgress) {
+    const toFetch = ids.filter(id => !prefetchedBuffers[id] && !loadedStems.has(id));
+    await Promise.all(toFetch.map(async id => {
+      const def = stemMap[id];
+      if (!def) return;
+      try {
+        const r = await fetch(audio.cdnBase + def.file, { mode: 'cors', credentials: 'omit' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        prefetchedBuffers[id] = await r.arrayBuffer();
+      } catch (e) {
+        console.warn('Prefetch failed:', id, e);
+      }
+      if (onProgress) onProgress(id);
+    }));
+  }
+
+  async function decodePreFetched(ids) {
+    await Promise.all(ids.map(async id => {
+      if (!prefetchedBuffers[id] || loadedStems.has(id)) return;
+      try {
+        buf[id] = await actx.decodeAudioData(prefetchedBuffers[id]);
+        delete prefetchedBuffers[id];
+        if (buf[id]) {
+          loadedStems.add(id);
+          if (!gain[id]) {
+            const g = actx.createGain();
+            g.gain.value = 0;
+            g.connect(mg);
+            gain[id] = g;
+          }
+          stemLoadedCallbacks.forEach(cb => cb(id));
+        }
+      } catch (e) {
+        console.warn('Decode failed:', id, e);
+      }
+    }));
+  }
+
   // ── Event hooks ──
   function onStemLoaded(cb) {
     stemLoadedCallbacks.push(cb);
@@ -306,6 +347,8 @@ export function createAudioEngine(config) {
     getContext: () => actx,
     playStinger,
     setImpactDuck,
+    prefetchStems,
+    decodePreFetched,
     onStemLoaded,
     resumeContext,
     get currentRoomIndex() { return currentRoomIndex; },
